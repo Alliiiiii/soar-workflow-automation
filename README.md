@@ -85,6 +85,17 @@ Enforcement runs on the agent through Wazuh **Active Response**.
 | host/admin | Browser | 192.168.56.1 |
 | shuffle-server (optional) | Ubuntu + Docker — Shuffle SOAR | 192.168.56.40 |
 
+---
+
+> **Deployment note:** The lab was executed on **Ubuntu 26.04 LTS**
+> (the version installed during development) rather than 22.04 LTS
+> as originally planned. All playbooks, rules, and integrations were
+> verified working on this version. The only compatibility adjustment
+> was setting `vm.max_map_count=262144` before installing the Wazuh
+> Indexer (a hard requirement of the OpenSearch-based indexer).
+
+---
+
 **Ports:** 1514/tcp (agent events), 1515/tcp (enrolment), 55000/tcp (REST API), 443/tcp (dashboard), 9200/tcp (indexer), 3001/3443/tcp (Shuffle), 587/tcp (SMTP), 443/tcp (Slack / AbuseIPDB outbound).
 
 **Test accounts on target:** `labuser` (victim), `analyst` (protected, key-based), `root` (protected, remote login disabled).

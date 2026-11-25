@@ -17,6 +17,16 @@
 |---|---|---|---|---|---|---|---|
 | 2026-11-25 | TC-01 | 5763 | firewall-drop | ✅ | ✅ | ✅ | auto-reversed after 600 s |
 
+## Verified results
+
+| Date (UTC) | TC ID | Rule | Action | Result |
+|---|---|---|---|---|
+| 2026-11-25 21:53:01 | TC-01 | 5712 | firewall-drop (600s) | PASS |
+| 2026-11-25 21:53:01 | TC-02 | 100100 | firewall-drop (3600s) + disable-account (1800s) | PASS |
+| 2026-11-25 21:53:01 | TC-03 | 31151 | firewall-drop (600s) | PASS |
+
+The `disable-account` action auto-expired after 1800s; recovery was verified via `passwd -S` showing `P` after the timeout.
+
 ## Effectiveness metrics
 - **MTTD** — alert timestamp minus log timestamp
 - **MTTR** — containment minus alert

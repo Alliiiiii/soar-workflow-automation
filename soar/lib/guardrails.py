@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-STATE_PATH = Path("/var/ossec/soar-state.json")
+STATE_PATH = Path("/var/ossec/logs/soar-state.json")
 
 
 class GuardrailViolation(Exception):

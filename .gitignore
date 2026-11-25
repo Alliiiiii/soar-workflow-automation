@@ -2,6 +2,10 @@
 soar/config.yaml
 *.log
 *.state.json
+!docs/evidence/soar.log
+
+# VM artifacts
+vmware/
 
 # Python
 __pycache__/

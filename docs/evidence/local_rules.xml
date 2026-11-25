@@ -1,0 +1,18 @@
+<!--
+  Custom correlation rule: SSH success after brute force
+  Rule 100100 — level 13
+  MITRE: T1110 (Brute Force), T1078 (Valid Accounts)
+-->
+<group name="soar,custom,authentication_success,">
+  <rule id="100100" level="13" frequency="6" timeframe="300">
+    <if_matched_group>authentication_failed</if_matched_group>
+    <same_source_ip />
+    <decoded_as>sshd</decoded_as>
+    <match>Accepted</match>
+    <description>SOAR: SSH login succeeded after repeated failures from same IP (possible compromise)</description>
+    <mitre>
+      <id>T1110</id>
+      <id>T1078</id>
+    </mitre>
+  </rule>
+</group>

@@ -1,0 +1,75 @@
+{
+  "_comment": "Skeleton Shuffle workflow — edit node IDs and credentials after import.",
+  "name": "SOAR Incident Response",
+  "description": "Wazuh alert -> guardrails -> Active Response -> Slack + Email",
+  "trigger": {
+    "type": "webhook",
+    "name": "Wazuh webhook",
+    "url": "http://192.168.56.40:3001/api/v1/hooks/webhook_REPLACE_ME"
+  },
+  "nodes": [
+    {
+      "id": "parse_alert",
+      "name": "Parse alert",
+      "app": "shuffle-tools",
+      "action": "execute_python",
+      "parameters": {
+        "code": "alert = input_data\ndata = alert.get('data', {})\nrule = alert.get('rule', {})\nreturn {'rule_id': str(rule.get('id')), 'level': int(rule.get('level', 0)), 'srcip': data.get('srcip'), 'user': data.get('dstuser')}"
+      }
+    },
+    {
+      "id": "guardrails",
+      "name": "Guardrails",
+      "app": "shuffle-tools",
+      "action": "execute_python",
+      "parameters": {
+        "code": "whitelist = ['192.168.56.1', '192.168.56.10']\nprotected = ['root', 'analyst']\nip = input_data.get('srcip')\nuser = input_data.get('user')\nif ip in whitelist: return {'allow': False, 'reason': 'whitelisted'}\nif user in protected: return {'allow': False, 'reason': 'protected user'}\nreturn {'allow': True}"
+      }
+    },
+    {
+      "id": "wazuh_api",
+      "name": "Wazuh Active Response",
+      "app": "HTTP",
+      "action": "PUT",
+      "parameters": {
+        "url": "https://192.168.56.10:55000/active-response?pretty=true",
+        "headers": { "Authorization": "Basic REPLACE_ME" },
+        "body": {
+          "command": "firewall-drop",
+          "arguments": ["${parse_alert.srcip}"],
+          "alert": { "data": "${parse_alert}" }
+        }
+      }
+    },
+    {
+      "id": "slack",
+      "name": "Slack notify",
+      "app": "Slack",
+      "action": "post_message",
+      "parameters": {
+        "webhook": "REPLACE_ME",
+        "text": "SOAR: rule ${parse_alert.rule_id} from ${parse_alert.srcip} on host ${parse_alert.user}"
+      }
+    },
+    {
+      "id": "email",
+      "name": "Email notify",
+      "app": "Email",
+      "action": "send",
+      "parameters": {
+        "smtp_host": "smtp.gmail.com",
+        "smtp_port": 587,
+        "from": "REPLACE_ME",
+        "to": "REPLACE_ME",
+        "subject": "SOAR alert",
+        "body": "Details in Slack."
+      }
+    }
+  ],
+  "edges": [
+    { "source": "parse_alert", "destination": "guardrails" },
+    { "source": "guardrails", "destination": "wazuh_api" },
+    { "source": "wazuh_api", "destination": "slack" },
+    { "source": "slack", "destination": "email" }
+  ]
+}

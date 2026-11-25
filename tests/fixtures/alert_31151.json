@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-11-25T10:25:00.000+0000",
+  "rule": {
+    "id": "31151",
+    "level": 10,
+    "description": "Multiple web server 400-class errors from one IP",
+    "mitre": { "id": ["T1190"] }
+  },
+  "agent": { "name": "target-linux", "ip": "192.168.56.20" },
+  "data": { "srcip": "192.168.56.30" }
+}

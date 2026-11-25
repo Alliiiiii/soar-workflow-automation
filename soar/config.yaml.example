@@ -1,0 +1,52 @@
+# ─────────────────────────────────────────────────────────────────────
+# custom-soar configuration
+# Copy to config.yaml and fill in real values. Never commit config.yaml.
+# ─────────────────────────────────────────────────────────────────────
+
+# Enforcement mode:
+#   native -> Wazuh Active Response does the blocking (recommended)
+#   api    -> custom-soar calls the Wazuh REST API itself
+mode: native
+
+# Alerts below this level are ignored by the integration.
+min_level: 10
+
+# Seconds during which the same IP/user will not be re-acted on.
+cooldown_seconds: 600
+
+# Addresses that must never be blocked or acted against.
+whitelist:
+  - 192.168.56.1        # admin host
+  - 192.168.56.10       # wazuh-server
+
+# Accounts that must never be disabled automatically.
+protected_users:
+  - root
+  - analyst
+
+# Optional AbuseIPDB enrichment
+abuseipdb:
+  enabled: false
+  api_key: ""
+  block_threshold: 50   # only block if score >= this (API mode)
+
+# Slack incoming webhook
+slack:
+  webhook_url: ""       # https://hooks.slack.com/services/XXX/YYY/ZZZ
+
+# SMTP email notification
+smtp:
+  host: smtp.gmail.com
+  port: 587
+  user: ""              # soc.alerts.lab@gmail.com
+  password: ""          # Gmail app password (NOT account password)
+  from_addr: ""         # same as user
+  to_addrs:
+    - analyst@example.com
+
+# Wazuh REST API — used only in mode: api
+wazuh_api:
+  url: https://192.168.56.10:55000
+  user: wazuh-wui
+  password: ""
+  verify_ssl: false     # self-signed cert in lab

@@ -1,0 +1,55 @@
+<!--
+  Merge this into /var/ossec/etc/ossec.conf on the Wazuh manager.
+  Do NOT paste the <ossec_config> wrapper — the real file already has one.
+  What goes inside the <ossec_config> element is shown below.
+-->
+
+<!-- 1. Global whitelist — never act against these addresses -->
+<global>
+  <white_list>192.168.56.1</white_list>   <!-- admin host -->
+  <white_list>192.168.56.10</white_list>  <!-- wazuh-server -->
+</global>
+
+<!-- 2. Active Response commands (built into Wazuh) -->
+<command>
+  <name>firewall-drop</name>
+  <executable>firewall-drop</executable>
+  <timeout_allowed>yes</timeout_allowed>
+</command>
+
+<command>
+  <name>disable-account</name>
+  <executable>disable-account</executable>
+  <timeout_allowed>yes</timeout_allowed>
+</command>
+
+<!-- 3. Playbook 1 and 3: block source IP for 10 minutes -->
+<active-response>
+  <command>firewall-drop</command>
+  <location>local</location>
+  <rules_id>5712,5763,31151,31153,31154</rules_id>
+  <timeout>600</timeout>
+</active-response>
+
+<!-- 4. Playbook 2: compromised account -> block IP 1 hour + lock account 30 min -->
+<active-response>
+  <command>firewall-drop</command>
+  <location>local</location>
+  <rules_id>100100</rules_id>
+  <timeout>3600</timeout>
+</active-response>
+
+<active-response>
+  <command>disable-account</command>
+  <location>local</location>
+  <rules_id>100100</rules_id>
+  <timeout>1800</timeout>
+</active-response>
+
+<!-- 5. Custom Python integration — invokes custom-soar.py on level>=10 alerts -->
+<integration>
+  <name>custom-soar</name>
+  <group>soar,</group>
+  <level>10</level>
+  <alert_format>json</alert_format>
+</integration>

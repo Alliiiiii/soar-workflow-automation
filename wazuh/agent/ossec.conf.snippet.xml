@@ -1,0 +1,15 @@
+<!--
+  Merge into /var/ossec/etc/ossec.conf on the Wazuh AGENT (target-linux).
+  The default agent config already monitors /var/log/auth.log — we only add
+  the Apache logs here.
+-->
+
+<localfile>
+  <log_format>apache</log_format>
+  <location>/var/log/apache2/access.log</location>
+</localfile>
+
+<localfile>
+  <log_format>apache</log_format>
+  <location>/var/log/apache2/error.log</location>
+</localfile>

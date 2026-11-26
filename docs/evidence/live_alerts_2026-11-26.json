@@ -1,0 +1,57 @@
+{
+  "source_ip": "192.168.56.145",
+  "agent": "target-linux",
+  "injection": "7 synthetic SSH failures + 1 success via /var/ossec/queue/sockets/queue",
+  "alerts": [
+    {
+      "rule_id": "5760",
+      "count": 6,
+      "first": "2026-11-26T08:40:08.352+0000",
+      "last": "2026-11-26T08:40:10.160+0000",
+      "description": "sshd: authentication failed."
+    },
+    {
+      "timestamp": "2026-11-26T08:40:09.860+0000",
+      "rule_id": "100099",
+      "level": 10,
+      "description": "SOAR: repeated SSH authentication failures (correlation helper)",
+      "mitre": null,
+      "agent": "target-linux",
+      "srcip": "192.168.56.145",
+      "dstuser": "labuser"
+    },
+    {
+      "timestamp": "2026-11-26T08:40:10.461+0000",
+      "rule_id": "100100",
+      "level": 13,
+      "description": "SOAR: SSH login succeeded after repeated failures from same IP (possible compromise)",
+      "mitre": [
+        "T1110",
+        "T1078"
+      ],
+      "agent": "target-linux",
+      "srcip": "192.168.56.145",
+      "dstuser": "labuser"
+    },
+    {
+      "timestamp": "2026-11-26T08:40:11.283+0000",
+      "rule_id": "651",
+      "level": 3,
+      "description": "Host Blocked by firewall-drop Active Response",
+      "mitre": null,
+      "agent": "target-linux",
+      "srcip": "192.168.56.145",
+      "dstuser": "labuser"
+    },
+    {
+      "timestamp": "2026-11-26T08:40:11.297+0000",
+      "rule_id": "657",
+      "level": 3,
+      "description": "Active response: active-response/bin/disable-account - add",
+      "mitre": null,
+      "agent": "target-linux",
+      "srcip": "192.168.56.145",
+      "dstuser": "labuser"
+    }
+  ]
+}

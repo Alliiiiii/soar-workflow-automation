@@ -18,6 +18,8 @@ Could not open /dev/vmmon: No such file or directory.
 Please make sure that the kernel module `vmmon` is loaded.
 ```
 
+![VMware Workstation vmmon error](images/vmmon-error.png)
+
 **Cause**
 
 The `vmmon` and `vmnet` kernel modules had not been rebuilt for the updated
@@ -55,6 +57,8 @@ The dashboard intermittently failed to load data and the API returned HTTP
 ```json
 {"title": "Unauthorized", "detail": "Maximum number of requests per minute reached", "error": 3099}
 ```
+
+![Wazuh API 429 / ERROR3099 in the dashboard health check](images/api-429.png)
 
 The message was most visible during dashboard polling and while the manager was
 being restarted repeatedly during rule/integration changes.
@@ -105,6 +109,8 @@ timeout of 20000ms exceeded
 ```
 expected a single document in the stream, but found more
 ```
+
+![Dashboard API health check showing timeout exceeded](images/dashboard-timeout.png)
 
 **Cause**
 

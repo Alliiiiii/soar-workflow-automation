@@ -1,11 +1,30 @@
 <!--
-  Custom correlation rule: SSH success after brute force
-  Rule 100100 — level 13
+  Custom correlation rules: SSH success after brute force.
+
+  Two-rule pattern:
+    100099 — helper: fires after 6 SSH failures (rule 5760) from the same
+             source IP within 300 s and tags the alert with
+             `soar_auth_failures`.
+    100100 — level 13: fires on a successful SSH login from that same IP
+             while the helper tag is still active.
+
+  This threshold is intentionally below the built-in brute-force rule 5763
+  (8 failures / 120 s) so the compromised-account playbook is evaluated
+  before the IP-containment playbook.
+
   MITRE: T1110 (Brute Force), T1078 (Valid Accounts)
 -->
-<group name="soar,custom,authentication_success,">
-  <rule id="100100" level="13" frequency="6" timeframe="300">
-    <if_matched_group>authentication_failed</if_matched_group>
+<group name="soar,custom,">
+  <rule id="100099" level="10" frequency="6" timeframe="300">
+    <if_matched_sid>5760</if_matched_sid>
+    <same_source_ip />
+    <description>SOAR: repeated SSH authentication failures (correlation helper)</description>
+    <group>soar_auth_failures,</group>
+  </rule>
+
+  <rule id="100100" level="13" timeframe="300">
+    <if_group>authentication_success</if_group>
+    <if_matched_group>soar_auth_failures</if_matched_group>
     <same_source_ip />
     <decoded_as>sshd</decoded_as>
     <match>Accepted</match>

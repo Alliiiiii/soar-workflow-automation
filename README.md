@@ -81,9 +81,13 @@ Enforcement runs on the agent through Wazuh **Active Response**.
 |------|------|-----|
 | wazuh-server | Ubuntu 22.04 — manager, indexer, dashboard, custom-soar | 192.168.56.10 |
 | target-linux | Ubuntu 22.04 — agent, OpenSSH, Apache2 | 192.168.56.20 |
-| attacker | Kali Linux — hydra, nikto, nmap | 192.168.56.30 |
+| attacker | Kali Linux — hydra, nikto, nmap | 192.168.56.133 (earlier notes: `.30`) |
 | host/admin | Browser | 192.168.56.1 |
 | shuffle-server (optional) | Ubuntu + Docker — Shuffle SOAR | 192.168.56.40 |
+
+> The Kali VM was moved from `192.168.56.30` to `192.168.56.133` during the
+> lab. Commands and screenshots in this repository use `.133` unless an older
+> note explicitly says `.30`.
 
 ---
 
@@ -145,7 +149,7 @@ engine and give it the ownership Wazuh expects:
 ```bash
 sudo tee /var/ossec/integrations/custom-soar <<'EOF'
 #!/bin/sh
-exec /usr/bin/python3 /opt/custom-soar/custom-soar.py "$@"
+exec /usr/bin/python3 /opt/custom-soar/custom-soar.py "$1"
 EOF
 sudo chmod 750 /var/ossec/integrations/custom-soar
 sudo chown root:wazuh /var/ossec/integrations/custom-soar
@@ -182,7 +186,8 @@ pytest -v tests/
 ## 6. Limitations
 
 - `disable-account` locks the password (`passwd -l`) but does **not** block SSH key logins. For key-based accounts the runbook recommends `usermod --expiredate 1` plus `pkill -KILL -u USER`, or a custom active-response script.
-- Correlation `frequency`/`timeframe` in rule 100100 varies by Wazuh version — validate with `wazuh-logtest` after upgrade.
+- Rule `100100` is a two-rule correlation: helper `100099` fires after 6 SSH failures from the same IP in 300 s, then `100100` fires on the next successful login within the same window. `wazuh-logtest` does not maintain `frequency` state across events, so validate the chain with a live event (or `tests/attack-simulation.sh`), not logtest alone.
+- The `100099` threshold is deliberately below rule `5763` (8 failures / 120 s) so `pb02` is evaluated before `pb01`. If `5763` fires first, the cooldown guardrail suppresses `pb02`'s duplicate actions for that IP.
 - API mode auto-expiry of Active Response depends on Wazuh version; the analyst runbook covers manual reversal.
 - Windows AD account disabling is out of scope (future work).
 
@@ -201,6 +206,121 @@ documented in [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md).
 
 ---
 
-## 8. Licence / Attribution
+## 8. Live Validation & Results
+
+Validated on the lab network on **26 November 2026**. The authoritative `pb02`
+run used seven synthetic SSH failures followed by one success from
+`192.168.56.145`, injected through the manager queue socket so the test does
+not depend on the attacker VM's credentials. Raw alert extracts are in
+[`docs/evidence/live_alerts_2026-11-26.json`](docs/evidence/live_alerts_2026-11-26.json).
+
+### 8.1 Agent health
+![Wazuh Endpoints dashboard showing agent 002 active](docs/images/agent-active.png)
+
+The dashboard shows agent `002` (`target-linux`, `192.168.56.20`, Wazuh
+`v4.9.2`) in the **active** state.
+
+### 8.2 Detection and correlation
+The helper rule `100099` fired after six failed logins from the same source IP:
+
+```json
+{
+  "rule_id": "100099",
+  "level": 10,
+  "description": "SOAR: repeated SSH authentication failures (correlation helper)",
+  "srcip": "192.168.56.145",
+  "dstuser": "labuser",
+  "timestamp": "2026-11-26T08:40:09.860+0000"
+}
+```
+
+The successful login then triggered `100100`:
+
+```json
+{
+  "rule_id": "100100",
+  "level": 13,
+  "description": "SOAR: SSH login succeeded after repeated failures from same IP (possible compromise)",
+  "mitre": ["T1110", "T1078"],
+  "srcip": "192.168.56.145",
+  "dstuser": "labuser",
+  "timestamp": "2026-11-26T08:40:10.461+0000"
+}
+```
+
+`soar.log` recorded the `pb02` decision and enforcement mode:
+
+```json
+{"timestamp": "2026-11-26T08:40:11+00:00", "rule": "100100", "level": 13, "agent": "target-linux", "srcip": "192.168.56.145", "dstuser": "labuser", "decision": {"playbook": "pb02_compromised_account", "srcip": "192.168.56.145", "user": "labuser", "actions": ["firewall-drop", "disable-account"], "timeout": {"firewall-drop": 3600, "disable-account": 1800}, "reason": "Compromised account: success after failures (rule 100100)", "enforcement": {"mode": "native", "note": "Wazuh Active Response handles it"}}}
+```
+
+### 8.3 Containment and recovery
+![iptables DROP rule for the attacker IP](docs/images/iptables-drop.png)
+
+The screenshot above shows the same Active Response mechanism on the lab
+target (`192.168.56.133`). For the live `pb02` run, Wazuh returned the expected
+execution alerts for `192.168.56.145`:
+
+- rule `651` — `Host Blocked by firewall-drop Active Response`
+- rule `657` — `Active response: active-response/bin/disable-account - add`
+
+The block was removed after the timeout (or manually with `iptables -D`):
+
+![iptables DROP rule removed](docs/images/iptables-revert.png)
+
+The account lock was verified to expire; `passwd -S labuser` returned `P`
+(password usable) during recovery:
+
+![passwd -S labuser showing P](docs/images/labuser-recovered.png)
+
+### 8.4 MITRE ATT&CK coverage
+![Wazuh agent MITRE ATT&CK summary](docs/images/mitre-attack-summary.png)
+
+The agent summary shows the Credential Access and Lateral Movement tactics
+produced by the SSH activity; the `100100` alert carries `T1110` and `T1078`.
+
+| Technique | ID | Evidence |
+|---|---|---|
+| Brute Force: Password Guessing | T1110.001 | rules `5760` / `100099` |
+| Brute Force | T1110 | rule `100100` |
+| Valid Accounts | T1078 | rule `100100` |
+| Remote Services: SSH | T1021.004 | rules `5760` / `100100` |
+
+### 8.5 Slack notification
+The integration posts this card to `#soc-alerts`. Delivery was verified with a
+dry-run replay returning `{"slack": true, "email": false}`:
+
+```text
+*SOAR alert*
+• Rule: 100100 (level 13) — SOAR: SSH login succeeded after repeated failures from same IP (possible compromise)
+• Host: target-linux
+• Source IP: 192.168.56.145
+• Target user: labuser
+• Playbook: pb02_compromised_account
+• Actions: firewall-drop, disable-account
+• Reason: Compromised account: success after failures (rule 100100)
+• MITRE: T1110, T1078
+• Time: 2026-11-26T08:40:10.461+0000
+```
+
+### 8.6 Reproduce the live test
+```bash
+# On wazuh-server (192.168.56.10)
+sudo cp wazuh/manager/local_rules.xml /var/ossec/etc/rules/local_rules.xml
+sudo systemctl restart wazuh-manager
+sudo python3 tests/inject_pb02.py --src 192.168.56.145
+
+# Verify the correlation and decision
+sudo grep '"id":"100100"' /var/ossec/logs/alerts/alerts.json | tail -1
+sudo tail -1 /var/ossec/logs/integrations/soar.log
+```
+
+> The test uses a fresh source IP for each run. If the IP is still inside the
+> 600 s cooldown, the guardrail records the decision but suppresses the
+> duplicate actions.
+
+---
+
+## 9. Licence / Attribution
 
 Coursework project. Free to reuse for educational purposes.

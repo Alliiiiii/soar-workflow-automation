@@ -23,6 +23,8 @@ Active Response. Every action is reported to analysts via **Slack** and **email*
 written to an audit log. An equivalent **Shuffle SOAR** design and an alternative
 **Splunk** integration are also documented.
 
+![SOAR Pipeline Demo](docs/soar-demo.gif)
+
 ---
 
 ## 2. Architecture

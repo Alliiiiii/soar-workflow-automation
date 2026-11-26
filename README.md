@@ -188,6 +188,19 @@ pytest -v tests/
 
 ---
 
-## 7. Licence / Attribution
+## 7. Troubleshooting
+
+Deployment issues encountered during lab setup and their verified fixes are
+documented in [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md).
+
+| Issue | Quick fix |
+|---|---|
+| VMware `/dev/vmmon` missing / monitor init failure | `sudo vmware-modconfig --console --install-all && sudo systemctl restart vmware` (enrol MOK or disable Secure Boot if blocked) |
+| Wazuh API HTTP 429 / `ERROR3099` | Raise `max_request_per_minute: 1000` under `access:` in `/var/ossec/api/configuration/api.yaml`, restart `wazuh-manager` |
+| Dashboard `timeout of 20000ms exceeded` / YAML stream error | Put `timeout: 60000` directly below `---` in `wazuh.yml`, validate with `yaml.safe_load`, restart `wazuh-dashboard` |
+
+---
+
+## 8. Licence / Attribution
 
 Coursework project. Free to reuse for educational purposes.

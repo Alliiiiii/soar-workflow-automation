@@ -21,6 +21,29 @@
 8. Slack + email summary. Decision appended to `soar.log`.
 9. Timeout expires -> block/lock reversed.
 
+### Defense in depth — local endpoint response
+
+Previously the flow depended entirely on the Wazuh Manager to drive Active
+Response back down to the agent: if the manager was down or the path to it was
+cut, enforcement did not happen.
+
+The agent now carries its own `<active-response>` blocks. They are bound to
+rules `5712`/`5763` (SSH brute force) and `100100` (compromised account), so
+`firewall-drop` and `disable-account` run locally on the monitored host. The
+endpoint therefore blocks the attacker in milliseconds, even when the manager
+is offline or the network path to it is severed.
+
+The SOAR engine on the manager still runs on the same alerts to send Slack
+notifications and write the audit log. Orchestration (notify/audit) and
+enforcement (block/lock) are now decoupled.
+
+```
+attacker -> endpoint (blocks locally, immediately)
+                 |
+                 v
+           manager (records, notifies Slack)
+```
+
 ## Seven-stage playbook model
 
 ```

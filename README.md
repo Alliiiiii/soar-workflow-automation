@@ -62,6 +62,13 @@ written to an audit log. An equivalent **Shuffle SOAR** design and an alternativ
                         +-------------------+
 ```
 
+> **Defense in depth:** The agent itself is configured with local
+> Active Response rules for SSH brute force (5712/5763) and compromised
+> accounts (100100). This means the endpoint blocks the attacker in
+> milliseconds, even if the Wazuh Manager is unreachable. The manager
+> still drives Slack notification and audit logging via the SOAR engine.
+> See `scripts/enable-endpoint-protection.sh` to reproduce the setup.
+
 Enforcement runs on the agent through Wazuh **Active Response**.
 
 **Data flow:**
@@ -132,6 +139,15 @@ sudo cp wazuh/manager/local_rules.xml /var/ossec/etc/rules/local_rules.xml
 sudo /var/ossec/bin/wazuh-logtest          # validate rule 100100
 sudo systemctl restart wazuh-manager
 ```
+
+### 4.3.5 Enable local endpoint protection (on target-linux)
+Run once per agent to add local Active Response:
+```bash
+sudo bash scripts/enable-endpoint-protection.sh
+```
+This is idempotent — safe to run multiple times. It injects the local
+active-response blocks into /var/ossec/etc/ossec.conf on the agent and
+restarts wazuh-agent.
 
 ### 4.4 Deploy custom-soar
 ```bash

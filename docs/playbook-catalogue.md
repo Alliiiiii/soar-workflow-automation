@@ -12,14 +12,17 @@
   > • Source IP: 192.168.56.30
   > • Playbook: pb01_ssh_bruteforce
   > • Actions: firewall-drop
+- **Local endpoint response:** firewall-drop runs on the agent in addition to the manager, so the block is applied instantly on the monitored host.
 
 ## PB-02 — Compromised account
 - **Trigger rule:** 100100 (level 13)
 - **Action:** `firewall-drop` (3600 s) + `disable-account` (1800 s)
 - **Guardrails:** whitelist, protected users (`root`, `analyst`), cooldown
 - **Note:** `passwd -l` doesn't block SSH-key logins. Runbook covers `usermod --expiredate 1` + `pkill`.
+- **Local endpoint response:** firewall-drop runs on the agent in addition to the manager, so the block is applied instantly on the monitored host. `disable-account` also runs locally on the agent.
 
 ## PB-03 — Web attack burst
 - **Trigger rules:** 31151, 31153, 31154 (level 10)
 - **Action:** `firewall-drop` on source IP
 - **Timeout:** 600 s
+- **Local endpoint response:** firewall-drop runs on the agent in addition to the manager, so the block is applied instantly on the monitored host.
